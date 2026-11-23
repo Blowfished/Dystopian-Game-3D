@@ -17,6 +17,8 @@ var _sfx_jump: AudioStreamWAV
 var _sfx_dash: AudioStreamWAV
 var _sfx_land: AudioStreamWAV
 var _sfx_ledge: AudioStreamWAV
+var _sfx_chime: AudioStreamWAV
+var _sfx_whoosh: AudioStreamWAV
 
 var _rng := RandomNumberGenerator.new()
 
@@ -68,6 +70,8 @@ func _generate_audio_streams() -> void:
 	_sfx_dash = _synth_dash()
 	_sfx_land = _synth_land()
 	_sfx_ledge = _synth_ledge()
+	_sfx_chime = _synth_chime()
+	_sfx_whoosh = _synth_whoosh()
 
 
 func _start_ambient() -> void:
@@ -97,6 +101,14 @@ func play_land(impact_speed: float = 8.0) -> void:
 
 func play_ledge_grab() -> void:
 	_play_sfx(_sfx_ledge, _rng.randf_range(0.96, 1.05), -12.0)
+
+
+func play_chime(pitch: float = 1.0) -> void:
+	_play_sfx(_sfx_chime, pitch, -11.0)
+
+
+func play_whoosh(pitch: float = 1.0) -> void:
+	_play_sfx(_sfx_whoosh, pitch, -10.5)
 
 
 func _play_sfx(stream: AudioStream, pitch: float, volume_db: float) -> void:
@@ -306,5 +318,37 @@ func _synth_ledge() -> AudioStreamWAV:
 		lp = lp + 0.35 * (_rng.randf_range(-1.0, 1.0) - lp)
 		var clink := sin(TAU * 460.0 * t) * 0.25 + sin(TAU * 820.0 * t) * 0.14
 		samples[i] = (lp * 0.45 + clink) * env
+
+	return _samples_to_wav(samples, false)
+
+
+func _synth_chime() -> AudioStreamWAV:
+	var duration := 0.55
+	var total := int(duration * SAMPLE_RATE)
+	var samples := PackedFloat32Array()
+	samples.resize(total)
+
+	for i in range(total):
+		var t := float(i) / float(SAMPLE_RATE)
+		var env := exp(-t * 6.5) * minf(t * 180.0, 1.0)
+		var s := sin(TAU * 523.25 * t) * 0.45 + sin(TAU * 783.99 * t) * 0.30 + sin(TAU * 1046.5 * t) * 0.15
+		samples[i] = s * env * 0.7
+
+	return _samples_to_wav(samples, false)
+
+
+func _synth_whoosh() -> AudioStreamWAV:
+	var duration := 0.38
+	var total := int(duration * SAMPLE_RATE)
+	var samples := PackedFloat32Array()
+	samples.resize(total)
+	var lp := 0.0
+
+	for i in range(total):
+		var t := float(i) / float(SAMPLE_RATE)
+		var p := t / duration
+		var env := sin(PI * p)
+		lp = lp + lerpf(0.12, 0.35, sin(PI * p)) * (_rng.randf_range(-1.0, 1.0) - lp)
+		samples[i] = lp * env * 0.8
 
 	return _samples_to_wav(samples, false)

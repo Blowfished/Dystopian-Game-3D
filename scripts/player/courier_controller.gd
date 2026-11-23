@@ -33,7 +33,7 @@ extends CharacterBody3D
 @export var ledge_mantle_duration: float = 0.24
 
 @export_group("Respawn")
-@export var chasm_kill_y: float = -12.0
+@export var chasm_kill_y: float = -7.5
 
 @onready var state_machine: StateMachine = $StateMachine
 @onready var visual_anchor: Node3D = $VisualAnchor
@@ -52,6 +52,13 @@ var wall_jump_lock_timer: float = 0.0
 var _footstep_timer: float = 0.0
 var _respawning: bool = false
 var _last_vertical_speed: float = 0.0
+var _on_ladder: bool = false
+var _ladder_ref: Node3D = null
+var _on_zipline: bool = false
+var _zip_start: Vector3 = Vector3.ZERO
+var _zip_end: Vector3 = Vector3.ZERO
+var _zip_progress: float = 0.0
+var _zip_speed: float = 18.0
 
 
 func _ready() -> void:
@@ -70,6 +77,12 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if GameState.is_map_open:
+		return
+	if event.is_action_pressed("interact") and GameState.active_interactable != null:
+		if GameState.active_interactable.has_method("interact"):
+			GameState.active_interactable.interact(self)
+			return
 	state_machine.process_input(event)
 
 
@@ -86,16 +99,24 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if _respawning:
+	if _respawning or GameState.is_map_open:
+		return
+
+	if _on_zipline:
+		_process_zipline(delta)
+		return
+
+	if _on_ladder:
+		_process_ladder(delta)
 		return
 
 	# Timers
 	if is_on_floor():
 		coyote_timer = coyote_time
 		air_dash_available = true
-		# Record safe checkpoint when steadily grounded away from edges.
-		if global_position.y > -1.0:
-			GameState.last_safe_position = global_position + Vector3(0.0, 0.12, 0.0)
+		# Record safe checkpoint only when steadily grounded with solid floor around feet (away from edges).
+		if global_position.y > -0.5 and _is_safely_grounded():
+			GameState.last_safe_position = global_position + Vector3(0.0, 0.14, 0.0)
 	else:
 		coyote_timer = maxf(0.0, coyote_timer - delta)
 
@@ -287,8 +308,34 @@ func _is_on_metal_surface() -> bool:
 	return global_position.y > 1.2
 
 
+func _is_safely_grounded() -> bool:
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return true
+	var offsets: Array[Vector3] = [
+		Vector3(0.42, 0.4, 0.0),
+		Vector3(-0.42, 0.4, 0.0),
+		Vector3(0.0, 0.4, 0.42),
+		Vector3(0.0, 0.4, -0.42),
+	]
+	for off: Vector3 in offsets:
+		var start: Vector3 = global_position + off
+		var q := PhysicsRayQueryParameters3D.create(start, start - Vector3(0.0, 1.2, 0.0), 1)
+		if space.intersect_ray(q).is_empty():
+			return false
+	return true
+
+
+func trigger_fall_respawn() -> void:
+	if _respawning:
+		return
+	_respawn_at_safe_position()
+
+
 func _respawn_at_safe_position() -> void:
 	_respawning = true
+	_on_ladder = false
+	_on_zipline = false
 	velocity = Vector3.ZERO
 	SceneTransition.fade_blink(func() -> void:
 		global_position = GameState.last_safe_position
@@ -297,3 +344,83 @@ func _respawn_at_safe_position() -> void:
 		state_machine.transition_to(&"Idle")
 		_respawning = false
 	)
+
+
+func teleport_to(target_pos: Vector3) -> void:
+	_on_ladder = false
+	_on_zipline = false
+	global_position = target_pos
+	velocity = Vector3.ZERO
+	air_dash_available = true
+	GameState.last_safe_position = target_pos
+	state_machine.transition_to(&"Idle")
+
+
+func apply_jump_pad(up_velocity: float) -> void:
+	_on_ladder = false
+	_on_zipline = false
+	velocity.y = up_velocity
+	coyote_timer = 0.0
+	air_dash_available = true
+	if visual:
+		visual.trigger_jump()
+	AudioManager.play_whoosh(1.2)
+	state_machine.transition_to(&"Jump")
+
+
+func set_on_ladder(active: bool, ladder_node: Node3D = null) -> void:
+	if active and _on_zipline:
+		return
+	_on_ladder = active
+	_ladder_ref = ladder_node if active else null
+	if active:
+		velocity = Vector3.ZERO
+		air_dash_available = true
+
+
+func start_zipline(start_pos: Vector3, end_pos: Vector3, speed: float = 19.0) -> void:
+	_on_ladder = false
+	_on_zipline = true
+	_zip_start = start_pos
+	_zip_end = end_pos
+	_zip_progress = 0.0
+	_zip_speed = speed
+	velocity = Vector3.ZERO
+	air_dash_available = true
+	var dir := (_zip_end - _zip_start).normalized()
+	rotate_visual_toward(Vector3(dir.x, 0.0, dir.z), 1.0)
+	AudioManager.play_whoosh(1.05)
+
+
+func _process_zipline(delta: float) -> void:
+	var dist := maxf(_zip_start.distance_to(_zip_end), 1.0)
+	_zip_progress += (_zip_speed * delta) / dist
+	var pos := _zip_start.lerp(_zip_end, clampf(_zip_progress, 0.0, 1.0))
+	global_position = pos - Vector3(0.0, 1.4, 0.0)
+	if Input.is_action_just_pressed("jump"):
+		_on_zipline = false
+		velocity.y = jump_velocity * 0.8
+		state_machine.transition_to(&"Jump")
+		return
+	if _zip_progress >= 1.0:
+		_on_zipline = false
+		velocity = (_zip_end - _zip_start).normalized() * 4.0
+		state_machine.transition_to(&"Fall")
+
+
+func _process_ladder(delta: float) -> void:
+	var input_vec := get_move_input_vector()
+	var climb_dir := -input_vec.y
+	if Input.is_action_pressed("jump"):
+		_on_ladder = false
+		velocity.y = jump_velocity * 0.85
+		state_machine.transition_to(&"Jump")
+		return
+	velocity = Vector3(0.0, climb_dir * 4.8, 0.0)
+	if _ladder_ref != null and is_instance_valid(_ladder_ref):
+		var fwd := -_ladder_ref.global_transform.basis.z
+		rotate_visual_toward(fwd, delta)
+	move_and_slide()
+	if is_on_floor() and climb_dir < -0.1:
+		_on_ladder = false
+		state_machine.transition_to(&"Idle")

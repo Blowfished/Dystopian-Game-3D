@@ -99,3 +99,23 @@ project/
   - **Medium** *(Default)*: Volumetric Fog, SSR, SSAO, ReflectionProbe + bounce fill lights (SDFGI off), balanced particles, post-process enabled.
   - **Low**: Distance fog + light cones (Volumetric Fog off), ReflectionProbe (SSR/SSAO/SDFGI off), reduced secondary lights, lightweight particles, subtle vignette.
 - **Procedural Audio**: `AudioManager` synthesizes seamless ambient rain + distant city hum loops and gentle SFX (footsteps, jump, dash, landing, ledge-grab) at runtime using pure procedural `AudioStreamWAV` generation—zero external downloads, 100% original.
+
+---
+
+## 6. Multi-District City Hub Expansion (Stage 2 Groundwork)
+The single balcony promenade has been expanded into a data-driven **4-District City Hub** (~480m × 340m, >12,000 m² of walkable area across 3+ vertical tiers):
+
+### Modular City Kit (`scenes/kit/`) & Data-Driven Layout (`data/city_layout.json`)
+- `CityLayoutLoader` (`scripts/world/city_layout_loader.gd`) reads `data/city_layout.json` at startup to assemble streets, plazas, stairs (smooth sloped collision), ramps, bridges, overpasses, facades (with `OccluderInstance3D` + `MultiMeshInstance3D` windows), shopfronts, canopies, balconies, greenhouses, elevators, ladders, ziplines, jump pads, and Maglev stations.
+- Districts and props can be added or rearranged purely in `data/city_layout.json` without modifying GDScript.
+
+### The 4 Connected Districts
+1. **Noodle Alley (`noodle_alley`)** — West (`y = 0m..11m`): Narrow, steamy warm-amber promenade, food stalls, lanterns, scooter, steam vents, and a zipline east to Market Terraces.
+2. **Market Terraces (`market_terraces`)** — Center (`y = 0m..10m`): 3-tier open bazaar plaza with grand stairs, accessible ramps, lifts, colorful fabric canopies, flower stalls, and string lights.
+3. **Neon Boulevard (`neon_boulevard`)** — North-East (`y = 0m..14m`): Wide puddle-rich boulevard with bars, arcades, karaoke shopfronts, layered magenta/cyan/teal neon signs, an elevated overpass, and skywalk lifts.
+4. **Rooftop Gardens (`rooftop_gardens`)** — South-East High Tier (`y = 14m..24m`): Quiet sky conservatory with glowing glass greenhouses, lanterns, summit pavilion, and a return zipline to Market Terraces.
+
+### Transit, Navigation & Performance
+- **Physical Maglev Tram (`scenes/transit/maglev_tram.tscn`)**: 2-car `AnimatableBody3D` train looping continuously between **Noodle Alley West**, **Market Terraces Central**, and **Neon Boulevard South**; players can walk aboard and ride it, or press `F` at any station kiosk for instant fast travel.
+- **Minimap & Full Map (`M`)**: Live radar minimap + interactive full-city map displaying districts, stations, POIs, player heading, and live tram position.
+- **Streaming & Optimization**: `DistrictStreamer` streams out distant district detail props & local lights (`>215m`), `OccluderInstance3D` culls behind building cores, `MultiMeshInstance3D` batches skyline towers, facade windows, and distant sky-traffic, and `F3` toggles the FPS / Draw Call / Primitives / Active Lights debug overlay.

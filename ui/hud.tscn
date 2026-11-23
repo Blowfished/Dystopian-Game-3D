@@ -1,6 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/ui/minimap_control.gd" id="2_mini"]
+[ext_resource type="Script" path="res://scripts/ui/full_map_overlay.gd" id="3_full"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 content_margin_left = 14.0
@@ -64,7 +66,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.12, 0.85)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 15
-text = "LATTICE STRATUM 47 // RAINY PROMENADE"
+text = "NOODLE ALLEY // STEAMY PROMENADE"
 
 [node name="ControlsPanel" type="PanelContainer" parent="Margin/TopLeft"]
 unique_name_in_owner = true
@@ -76,11 +78,10 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.84, 0.89, 0.98, 0.9)
 theme_override_font_sizes/font_size = 12
-text = "Move: WASD / Left Stick
-Orbit: Mouse / Right Stick
-Jump: Space / A  (hold for height, wall-jump, ledge-grab)
-Dash: Shift / B / R1
-Quality: F1   •   Hide Help: H   •   Cursor: Esc"
+text = "Move: WASD / Left Stick  •  Orbit: Mouse / Right Stick
+Jump: Space / A  •  Dash: Shift / E / B
+Interact (Lifts, Ziplines, Stations): F / X
+Map: M   •   Quality: F1   •   Debug: F3   •   Help: H"
 
 [node name="TopRight" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
@@ -107,14 +108,91 @@ theme_override_colors/font_color = Color(0.62, 0.88, 0.86, 0.85)
 theme_override_font_sizes/font_size = 12
 text = "60 FPS"
 
+[node name="DebugLabel" type="Label" parent="Margin/TopRight"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.75, 0.92, 1.0, 0.92)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.12, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 11
+text = "Debug"
+
+[node name="Minimap" type="Control" parent="Margin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(156, 156)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+mouse_filter = 2
+script = ExtResource("2_mini")
+
+[node name="InteractPrompt" type="Label" parent="Margin"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.24, 0.94, 0.86, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.12, 0.95)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 15
+text = "[F] Interact"
+
 [node name="CursorHint" type="Label" parent="Margin"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-size_flags_vertical = 8
+size_flags_vertical = 0
 theme_override_colors/font_color = Color(0.95, 0.88, 0.74, 0.88)
 theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.12, 0.9)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 13
 text = "Click anywhere to lock mouse & orbit camera  •  ESC to release"
+
+[node name="FullMapOverlay" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 70.0
+offset_top = 56.0
+offset_right = -70.0
+offset_bottom = -56.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("3_full")
+
+[node name="VBox" type="VBoxContainer" parent="FullMapOverlay"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MapModeLabel" type="Label" parent="FullMapOverlay/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.58, 1)
+theme_override_font_sizes/font_size = 16
+text = "LATTICE CITY MAP"
+
+[node name="HBox" type="HBoxContainer" parent="FullMapOverlay/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="FullMapCanvas" type="Control" parent="FullMapOverlay/VBox/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="StationButtons" type="VBoxContainer" parent="FullMapOverlay/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+theme_override_constants/separation = 8

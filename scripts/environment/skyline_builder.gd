@@ -3,8 +3,8 @@ class_name SkylineBuilder
 extends Node3D
 
 ## Builds the planet-wide Lattice megastructure skyline using MultiMeshInstance3D
-## depth rings, colossal distant sky-bridges, sweeping volumetric searchlights,
-## layered haze bands, and the glowing teal landmark tower.
+## depth rings in deep indigo-violet twilight haze, colossal distant sky-bridges,
+## sweeping volumetric searchlights, and the glowing teal landmark tower.
 
 const LANDMARK_SCENE := preload("res://scenes/environment/landmark_tower.tscn")
 
@@ -18,6 +18,8 @@ var _searchlight_pivots: Array[Node3D] = []
 var _searchlight_phases: Array[float] = []
 var _searchlight_speeds: Array[float] = []
 var _searchlight_base_rots: Array[Vector3] = []
+var _traffic_mmi: MultiMeshInstance3D
+var _traffic_data: Array[Dictionary] = []
 var _time: float = 0.0
 
 
@@ -35,6 +37,18 @@ func _process(delta: float) -> void:
 			var tilt := cos(_time * _searchlight_speeds[i] * 0.65 + _searchlight_phases[i]) * 5.0
 			p.rotation_degrees = Vector3(base_rot.x + tilt, base_rot.y, base_rot.z + sweep)
 
+	if _traffic_mmi != null and _traffic_mmi.multimesh != null:
+		var mm := _traffic_mmi.multimesh
+		for i in range(_traffic_data.size()):
+			var td := _traffic_data[i]
+			var angle: float = td["angle"] + td["speed"] * _time
+			var radius: float = td["radius"]
+			var y: float = td["y"]
+			var pos := Vector3(cos(angle) * radius, y, sin(angle) * radius)
+			var tangent := angle + (PI * 0.5 if td["speed"] >= 0.0 else -PI * 0.5)
+			var b := Basis(Vector3.UP, -tangent).scaled(td["scale"])
+			mm.set_instance_transform(i, Transform3D(b, pos))
+
 
 func _rebuild() -> void:
 	PropUtils.clear_children(self)
@@ -48,76 +62,65 @@ func _rebuild() -> void:
 
 	var window_shader: Shader = load("res://shaders/skyline_windows.gdshader")
 
-	# 1. Near Canyon Megastructures (crisp warm windows, surrounds the walkway canyon)
+	# 1. Near Canyon Megastructures (360° surrounding the dense urban fabric)
 	_build_tower_layer(
 		"NearTowers",
 		window_shader,
 		rng,
-		115,
-		54.0, 128.0,
-		Vector2(10.0, 24.0),
-		Vector2(52.0, 138.0),
-		Vector2(-85.0, -32.0),
-		1.85, 0.54, 0.92, 0.06,
-		Color("#10162B"), Color("#192240")
+		155,
+		225.0, 345.0,
+		Vector2(16.0, 32.0),
+		Vector2(85.0, 175.0),
+		Vector2(-95.0, -35.0),
+		2.00, 0.58, 0.90, 0.12,
+		Color("#15102B"), Color("#231B45")
 	)
 
-	# 2. Mid Skyline Ring (taller towers, denser tiny windows, soft indigo haze)
+	# 2. Mid Skyline Ring (360° taller towers, warm amber + teal windows, indigo-violet haze)
 	_build_tower_layer(
 		"MidTowers",
 		window_shader,
 		rng,
-		165,
-		135.0, 275.0,
-		Vector2(16.0, 36.0),
-		Vector2(95.0, 240.0),
-		Vector2(-115.0, -55.0),
-		1.55, 0.50, 0.72, 0.28,
-		Color("#0C1226"), Color("#17203F")
+		190,
+		350.0, 535.0,
+		Vector2(22.0, 44.0),
+		Vector2(130.0, 285.0),
+		Vector2(-125.0, -55.0),
+		1.65, 0.54, 0.72, 0.34,
+		Color("#120E26"), Color("#201842")
 	)
 
-	# 3. Far Colossus Monoliths (planet-wide Lattice megastructures fading into indigo mist)
+	# 3. Far Colossus Monoliths
 	_build_tower_layer(
 		"ColossusTowers",
 		window_shader,
 		rng,
-		105,
-		285.0, 560.0,
-		Vector2(34.0, 74.0),
-		Vector2(210.0, 480.0),
-		Vector2(-180.0, -90.0),
-		1.15, 0.44, 0.56, 0.58,
-		Color("#0A0F22"), Color("#161E3B")
+		115,
+		545.0, 860.0,
+		Vector2(42.0, 86.0),
+		Vector2(250.0, 520.0),
+		Vector2(-190.0, -90.0),
+		1.25, 0.46, 0.58, 0.62,
+		Color("#0F0B21"), Color("#1D163C")
 	)
 
-	# 4. Abyssal Lower Strata (visible when peering over the promenade railing!)
-	_build_tower_layer(
-		"AbyssTowers",
-		window_shader,
-		rng,
-		55,
-		22.0, 78.0,
-		Vector2(9.0, 20.0),
-		Vector2(45.0, 82.0),
-		Vector2(-102.0, -92.0),
-		1.25, 0.46, 0.80, 0.34,
-		Color("#090E1E"), Color("#131B34")
-	)
-
-	# 5. Massive Horizontal Lattice Sky-Bridges spanning between distant megastructures
+	# 4. Massive Horizontal Lattice Sky-Bridges spanning between distant megastructures
 	_build_sky_bridges(rng)
 
-	# 6. Hero Glowing Teal Landmark Tower with Magenta Beacon (framed cleanly in the -Z vista!)
+	# 5. Hero Glowing Teal Landmark Tower with Magenta Beacon framed cleanly down the -Z canyon!
 	var landmark := LANDMARK_SCENE.instantiate()
 	landmark.name = "HeroLandmarkTower"
-	landmark.position = Vector3(26.0, -48.0, -172.0)
+	landmark.position = Vector3(18.0, -48.0, -285.0)
 	landmark.rotation_degrees = Vector3(0.0, -18.0, 0.0)
 	add_child(landmark)
 
-	# 7. Sweeping Volumetric Searchlight Beams rising behind the midground skyline
+	# 6. Sweeping Volumetric Searchlight Beams rising behind the midground skyline
 	_build_searchlights()
 
-	# 8. Subtle Atmospheric Mist Ribbons between depth layers
+	# 7. Distant Moving Sky-Trains & Flying Vehicles (MultiMeshInstance3D)
+	_build_distant_traffic(rng)
+
+	# 8. Subtle Atmospheric Violet-Indigo Mist Ribbons between depth layers
 	_build_haze_layers()
 
 
@@ -154,6 +157,7 @@ func _build_tower_layer(
 	mat.shader = shader
 	mat.set_shader_parameter("tower_dark", dark_col)
 	mat.set_shader_parameter("tower_mid", mid_col)
+	mat.set_shader_parameter("haze_color", Color("#221942"))
 	mat.set_shader_parameter("emission_boost", emission_boost)
 	mat.set_shader_parameter("window_density", window_density)
 	mat.set_shader_parameter("window_scale", window_scale)
@@ -164,10 +168,9 @@ func _build_tower_layer(
 	var customs: Array[Color] = []
 
 	for i in range(count):
-		# Concentrate ~65% of skyline density in the sweeping -Z vista arc, rest all around 360°
 		var angle := 0.0
-		if i < int(count * 0.65):
-			angle = rng.randf_range(-PI * 0.88, -PI * 0.12)
+		if i < int(count * 0.42):
+			angle = rng.randf_range(-PI * 0.90, -PI * 0.10)
 		else:
 			angle = rng.randf_range(0.0, TAU)
 
@@ -175,14 +178,11 @@ func _build_tower_layer(
 		var x := cos(angle) * dist
 		var z := sin(angle) * dist
 
-		# Keep a clean viewing corridor right in front of the Hero Landmark Tower!
-		if layer_name != "AbyssTowers":
-			var to_landmark := Vector2(x - 26.0, z - (-172.0)).length()
-			if to_landmark < 34.0:
-				continue
-			# Also keep clear of the playable promenade footprint itself
-			if absf(x) < 34.0 and z > -18.0 and z < 28.0:
-				continue
+		var to_landmark := Vector2(x - 18.0, z - (-285.0)).length()
+		if to_landmark < 38.0:
+			continue
+		if absf(x) < 215.0 and absf(z) < 160.0:
+			continue
 
 		var w := rng.randf_range(width_range.x, width_range.y)
 		var d := w * rng.randf_range(0.72, 1.32)
@@ -209,16 +209,14 @@ func _build_sky_bridges(rng: RandomNumberGenerator) -> void:
 	bridges.name = "MegastructureBridges"
 	add_child(bridges)
 
-	var steel_far := Palette.make_stylized_material(Color("#121933"), 0.85, 0.15, Color("#3E548A"), 0.25)
-	var strip_warm := Palette.make_emissive_material(Palette.WINDOW_WARM_A, 1.55)
-	var strip_teal := Palette.make_emissive_material(Palette.LANDMARK_TEAL, 1.85)
+	var steel_far := Palette.make_stylized_material(Color("#1A1436"), 0.85, 0.15, Color("#5E4D99"), 0.25)
+	var strip_warm := Palette.make_emissive_material(Palette.WINDOW_WARM_A, 1.65)
+	var strip_teal := Palette.make_emissive_material(Palette.LANDMARK_TEAL, 1.95)
 
 	var specs := [
-		{"pos": Vector3(-55.0, 28.0, -145.0), "size": Vector3(135.0, 5.2, 7.5), "rot": Vector3(0.0, 14.0, 0.0), "teal": false},
-		{"pos": Vector3(88.0, 56.0, -210.0), "size": Vector3(175.0, 6.8, 9.0), "rot": Vector3(0.0, -19.0, 4.0), "teal": true},
-		{"pos": Vector3(-115.0, 82.0, -260.0), "size": Vector3(210.0, 8.5, 11.0), "rot": Vector3(0.0, 22.0, -6.0), "teal": false},
-		{"pos": Vector3(12.0, -26.0, -92.0), "size": Vector3(120.0, 4.2, 6.5), "rot": Vector3(0.0, -8.0, 0.0), "teal": true},
-		{"pos": Vector3(-140.0, 12.0, -35.0), "size": Vector3(150.0, 5.5, 7.5), "rot": Vector3(0.0, 74.0, 0.0), "teal": false},
+		{"pos": Vector3(-55.0, 48.0, -165.0), "size": Vector3(155.0, 5.5, 8.0), "rot": Vector3(0.0, 14.0, 0.0), "teal": false},
+		{"pos": Vector3(88.0, 68.0, -215.0), "size": Vector3(175.0, 6.8, 9.0), "rot": Vector3(0.0, -19.0, 4.0), "teal": true},
+		{"pos": Vector3(-115.0, 92.0, -260.0), "size": Vector3(210.0, 8.5, 11.0), "rot": Vector3(0.0, 22.0, -6.0), "teal": false},
 	]
 
 	for spec in specs:
@@ -233,7 +231,6 @@ func _build_sky_bridges(rng: RandomNumberGenerator) -> void:
 		var strip := PropUtils.add_box(holder, Vector3(sz.x * 0.94, 0.55, sz.z + 0.3), Vector3(0.0, 0.4, 0.0), smat)
 		strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	# Avoid unused rng warning
 	var _unused := rng.randf()
 
 
@@ -244,10 +241,10 @@ func _build_searchlights() -> void:
 
 	var beam_shader: Shader = load("res://shaders/searchlight_beam.gdshader")
 	var configs := [
-		{"pos": Vector3(-24.0, -22.0, -152.0), "rot": Vector3(6.0, 0.0, 18.0), "len": 250.0, "r_top": 20.0, "speed": 0.24, "phase": 0.4, "col": Color("#FFF1CF")},
-		{"pos": Vector3(72.0, -25.0, -190.0), "rot": Vector3(8.0, 0.0, -21.0), "len": 280.0, "r_top": 24.0, "speed": 0.19, "phase": 2.1, "col": Color("#F5E7C4")},
-		{"pos": Vector3(-92.0, -18.0, -205.0), "rot": Vector3(5.0, 0.0, -12.0), "len": 265.0, "r_top": 22.0, "speed": 0.22, "phase": 4.2, "col": Color("#B8EFEA")},
-		{"pos": Vector3(8.0, -35.0, -225.0), "rot": Vector3(-4.0, 0.0, 12.0), "len": 300.0, "r_top": 26.0, "speed": 0.16, "phase": 1.3, "col": Color("#FFF3D4")},
+		{"pos": Vector3(-24.0, -18.0, -152.0), "rot": Vector3(6.0, 0.0, 18.0), "len": 250.0, "r_top": 20.0, "speed": 0.24, "phase": 0.4, "col": Color("#FFF1CF")},
+		{"pos": Vector3(72.0, -20.0, -190.0), "rot": Vector3(8.0, 0.0, -21.0), "len": 280.0, "r_top": 24.0, "speed": 0.19, "phase": 2.1, "col": Color("#FFD6E8")},
+		{"pos": Vector3(-92.0, -16.0, -205.0), "rot": Vector3(5.0, 0.0, -12.0), "len": 265.0, "r_top": 22.0, "speed": 0.22, "phase": 4.2, "col": Color("#B8EFEA")},
+		{"pos": Vector3(8.0, -25.0, -225.0), "rot": Vector3(-4.0, 0.0, 12.0), "len": 300.0, "r_top": 26.0, "speed": 0.16, "phase": 1.3, "col": Color("#FFF3D4")},
 	]
 
 	for cfg in configs:
@@ -261,14 +258,14 @@ func _build_searchlights() -> void:
 		cyl.bottom_radius = 1.8
 		cyl.top_radius = cfg["r_top"]
 		cyl.height = beam_len
-		cyl.radial_segments = 20
+		cyl.radial_segments = 16
 		cyl.cap_top = false
 		cyl.cap_bottom = false
 
 		var mat := ShaderMaterial.new()
 		mat.shader = beam_shader
 		mat.set_shader_parameter("beam_color", cfg["col"])
-		mat.set_shader_parameter("intensity", 0.21)
+		mat.set_shader_parameter("intensity", 0.22)
 		mat.set_shader_parameter("edge_softness", 2.35)
 		mat.set_shader_parameter("beam_height", beam_len)
 
@@ -285,39 +282,50 @@ func _build_searchlights() -> void:
 		_searchlight_phases.append(cfg["phase"])
 
 
+func _build_distant_traffic(rng: RandomNumberGenerator) -> void:
+	_traffic_data.clear()
+	_traffic_mmi = MultiMeshInstance3D.new()
+	_traffic_mmi.name = "DistantSkyTraffic"
+	_traffic_mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	var box := BoxMesh.new()
+	box.size = Vector3(1.0, 1.0, 1.0)
+	box.material = Palette.make_emissive_material(Palette.LANTERN_AMBER, 2.6)
+	mm.mesh = box
+
+	var total := 44
+	mm.instance_count = total
+	for i in range(total):
+		var is_train := i < 12
+		_traffic_data.append({
+			"angle": rng.randf_range(0.0, TAU),
+			"radius": rng.randf_range(235.0, 460.0),
+			"y": rng.randf_range(-10.0, 85.0),
+			"speed": rng.randf_range(0.018, 0.045) * (1.0 if i % 2 == 0 else -1.0),
+			"scale": Vector3(1.2, 0.9, 14.0) if is_train else Vector3(0.7, 0.45, 2.4),
+		})
+	_traffic_mmi.multimesh = mm
+	add_child(_traffic_mmi)
+
+
 func _build_haze_layers() -> void:
-	# Soft translucent painterly haze veils in the abyss below and between skyline depth rings
 	var haze_root := Node3D.new()
 	haze_root.name = "AtmosphericHazeLayers"
 	add_child(haze_root)
 
-	var abyss_mat := StandardMaterial3D.new()
-	abyss_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	abyss_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	abyss_mat.albedo_color = Color(0.09, 0.12, 0.25, 0.56)
-	abyss_mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-
-	var abyss_plane := MeshInstance3D.new()
-	var pm := PlaneMesh.new()
-	pm.size = Vector2(1100.0, 1100.0)
-	abyss_plane.mesh = pm
-	abyss_plane.material_override = abyss_mat
-	abyss_plane.position = Vector3(0.0, -56.0, -120.0)
-	abyss_plane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	haze_root.add_child(abyss_plane)
-
-	# Vertical gradient mist curtains between Near/Mid and Mid/Colossus rings
 	var haze_tex := _make_vertical_haze_texture()
 	var ring_specs := [
-		{"radius": 130.0, "height": 220.0, "y": 24.0, "col": Color(0.11, 0.145, 0.30, 0.22)},
-		{"radius": 278.0, "height": 340.0, "y": 52.0, "col": Color(0.12, 0.155, 0.32, 0.28)},
+		{"radius": 240.0, "height": 260.0, "y": 40.0, "col": Color(0.18, 0.13, 0.34, 0.24)},
+		{"radius": 390.0, "height": 360.0, "y": 65.0, "col": Color(0.16, 0.12, 0.32, 0.30)},
 	]
 	for spec in ring_specs:
 		var cyl := CylinderMesh.new()
 		cyl.top_radius = spec["radius"]
 		cyl.bottom_radius = spec["radius"]
 		cyl.height = spec["height"]
-		cyl.radial_segments = 36
+		cyl.radial_segments = 32
 		cyl.cap_top = false
 		cyl.cap_bottom = false
 
@@ -342,8 +350,7 @@ func _make_vertical_haze_texture() -> ImageTexture:
 	var img := Image.create(4, h, false, Image.FORMAT_RGBA8)
 	for y in range(h):
 		var v := float(y) / float(h - 1)
-		# Dense in the lower/mid city strata, fading smoothly toward the night zenith
-		var alpha := smoothstep(0.0, 0.25, v) * (1.0 - smoothstep(0.35, 1.0, v))
+		var alpha := smoothstep(0.0, 0.25, v) * (1.0 - smoothstep(0.38, 1.0, v))
 		for x in range(4):
 			img.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
 	return ImageTexture.create_from_image(img)
