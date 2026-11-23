@@ -1,0 +1,102 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/courier_controller.gd" id="1_ctrl"]
+[ext_resource type="PackedScene" path="res://scenes/player/courier_visual.tscn" id="2_vis"]
+[ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="3_cam"]
+[ext_resource type="Script" path="res://scripts/state_machine/state_machine.gd" id="4_sm"]
+[ext_resource type="Script" path="res://scripts/player/states/idle_state.gd" id="5_idle"]
+[ext_resource type="Script" path="res://scripts/player/states/move_state.gd" id="6_move"]
+[ext_resource type="Script" path="res://scripts/player/states/jump_state.gd" id="7_jump"]
+[ext_resource type="Script" path="res://scripts/player/states/fall_state.gd" id="8_fall"]
+[ext_resource type="Script" path="res://scripts/player/states/dash_state.gd" id="9_dash"]
+[ext_resource type="Script" path="res://scripts/player/states/wall_slide_state.gd" id="10_wall"]
+[ext_resource type="Script" path="res://scripts/player/states/ledge_grab_state.gd" id="11_ledge"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.30
+height = 1.50
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_dash"]
+emission_shape = 1
+emission_sphere_radius = 0.25
+direction = Vector3(0, 0.3, 1)
+spread = 35.0
+initial_velocity_min = 0.8
+initial_velocity_max = 2.0
+gravity = Vector3(0, 0.5, 0)
+scale_min = 0.5
+scale_max = 1.1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dash"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.58, 0.96, 0.90, 0.72)
+
+[sub_resource type="SphereMesh" id="SphereMesh_dash"]
+material = SubResource("StandardMaterial3D_dash")
+radius = 0.07
+height = 0.14
+radial_segments = 8
+rings = 4
+
+[node name="Courier" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+floor_snap_length = 0.24
+script = ExtResource("1_ctrl")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="VisualAnchor" type="Node3D" parent="."]
+
+[node name="CourierVisual" parent="VisualAnchor" instance=ExtResource("2_vis")]
+
+[node name="DashParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+emitting = false
+amount = 24
+lifetime = 0.32
+process_material = SubResource("ParticleProcessMaterial_dash")
+draw_pass_1 = SubResource("SphereMesh_dash")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("3_cam")
+
+[node name="PitchPivot" type="Node3D" parent="CameraRig"]
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig/PitchPivot"]
+collision_mask = 1
+spring_length = 5.4
+margin = 0.22
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/PitchPivot/SpringArm3D"]
+fov = 62.0
+near = 0.12
+far = 1400.0
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("4_sm")
+initial_state_path = NodePath("Idle")
+
+[node name="Idle" type="Node" parent="StateMachine"]
+script = ExtResource("5_idle")
+
+[node name="Move" type="Node" parent="StateMachine"]
+script = ExtResource("6_move")
+
+[node name="Jump" type="Node" parent="StateMachine"]
+script = ExtResource("7_jump")
+
+[node name="Fall" type="Node" parent="StateMachine"]
+script = ExtResource("8_fall")
+
+[node name="Dash" type="Node" parent="StateMachine"]
+script = ExtResource("9_dash")
+
+[node name="WallSlide" type="Node" parent="StateMachine"]
+script = ExtResource("10_wall")
+
+[node name="LedgeGrab" type="Node" parent="StateMachine"]
+script = ExtResource("11_ledge")

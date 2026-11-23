@@ -1,0 +1,168 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/courier_visual.gd" id="1_vis"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_jacket"]
+radius = 0.25
+height = 0.72
+radial_segments = 14
+rings = 6
+
+[sub_resource type="TorusMesh" id="TorusMesh_scarf"]
+inner_radius = 0.14
+outer_radius = 0.23
+rings = 14
+ring_segments = 8
+
+[sub_resource type="BoxMesh" id="BoxMesh_scarf_tail"]
+size = Vector3(0.11, 0.34, 0.05)
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.19
+height = 0.38
+radial_segments = 14
+rings = 10
+
+[sub_resource type="SphereMesh" id="SphereMesh_beanie"]
+radius = 0.205
+height = 0.30
+radial_segments = 14
+rings = 8
+
+[sub_resource type="SphereMesh" id="SphereMesh_pom"]
+radius = 0.055
+height = 0.11
+radial_segments = 10
+rings = 6
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_arm"]
+radius = 0.075
+height = 0.44
+radial_segments = 10
+rings = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_bag_body"]
+size = Vector3(0.32, 0.28, 0.15)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bag_flap"]
+size = Vector3(0.33, 0.12, 0.165)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bag_strap"]
+size = Vector3(0.055, 0.46, 0.03)
+
+[sub_resource type="BoxMesh" id="BoxMesh_buckle"]
+size = Vector3(0.07, 0.05, 0.03)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tag"]
+size = Vector3(0.04, 0.11, 0.025)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_leg"]
+radius = 0.082
+height = 0.46
+radial_segments = 10
+rings = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_boot"]
+size = Vector3(0.14, 0.12, 0.22)
+
+[node name="CourierVisual" type="Node3D"]
+script = ExtResource("1_vis")
+
+[node name="SquashRoot" type="Node3D" parent="."]
+
+[node name="TorsoPivot" type="Node3D" parent="SquashRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
+
+[node name="JacketMesh" type="MeshInstance3D" parent="SquashRoot/TorsoPivot"]
+transform = Transform3D(1.06, 0, 0, 0, 1, 0, 0, 0, 0.92, 0, 0.12, 0)
+mesh = SubResource("CapsuleMesh_jacket")
+
+[node name="ScarfRing" type="MeshInstance3D" parent="SquashRoot/TorsoPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.44, 0)
+mesh = SubResource("TorusMesh_scarf")
+
+[node name="ScarfTail" type="Node3D" parent="SquashRoot/TorsoPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06, 0.42, 0.16)
+
+[node name="ScarfTailMesh" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/ScarfTail"]
+transform = Transform3D(1, 0, 0, 0, 0.96, -0.28, 0, 0.28, 0.96, 0, -0.16, 0.05)
+mesh = SubResource("BoxMesh_scarf_tail")
+
+[node name="HeadPivot" type="Node3D" parent="SquashRoot/TorsoPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.62, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/HeadPivot"]
+mesh = SubResource("SphereMesh_head")
+
+[node name="BeanieMesh" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/HeadPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.98, 0.19, 0, -0.19, 0.98, 0, 0.085, 0.025)
+mesh = SubResource("SphereMesh_beanie")
+
+[node name="BeaniePom" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/HeadPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.24, 0.07)
+mesh = SubResource("SphereMesh_pom")
+
+[node name="ArmL" type="Node3D" parent="SquashRoot/TorsoPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.31, 0.34, 0)
+
+[node name="ArmLMesh" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/ArmL"]
+transform = Transform3D(0.98, -0.19, 0, 0.19, 0.98, 0, 0, 0, 1, -0.02, -0.18, 0)
+mesh = SubResource("CapsuleMesh_arm")
+
+[node name="ArmR" type="Node3D" parent="SquashRoot/TorsoPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.31, 0.34, 0)
+
+[node name="ArmRMesh" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/ArmR"]
+transform = Transform3D(0.98, 0.19, 0, -0.19, 0.98, 0, 0, 0, 1, 0.02, -0.18, 0)
+mesh = SubResource("CapsuleMesh_arm")
+
+[node name="BagPivot" type="Node3D" parent="SquashRoot/TorsoPivot"]
+transform = Transform3D(0.96, 0, 0.28, 0, 1, 0, -0.28, 0, 0.96, 0.18, 0.02, 0.24)
+
+[node name="BagBody" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/BagPivot"]
+mesh = SubResource("BoxMesh_bag_body")
+
+[node name="BagFlap" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/BagPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0.01)
+mesh = SubResource("BoxMesh_bag_flap")
+
+[node name="BagStrap" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/BagPivot"]
+transform = Transform3D(0.74, 0.67, 0, -0.67, 0.74, 0, 0, 0, 1, -0.16, 0.24, -0.05)
+mesh = SubResource("BoxMesh_bag_strap")
+
+[node name="BagBuckle" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/BagPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.088)
+mesh = SubResource("BoxMesh_buckle")
+
+[node name="BagTealTag" type="MeshInstance3D" parent="SquashRoot/TorsoPivot/BagPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.97, -0.24, 0, 0.24, 0.97, 0.14, -0.05, 0.085)
+mesh = SubResource("BoxMesh_tag")
+
+[node name="CourierTagLight" type="OmniLight3D" parent="SquashRoot/TorsoPivot/BagPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0.05, 0.26)
+light_color = Color(0.55, 0.96, 0.92, 1)
+light_energy = 0.52
+omni_range = 3.2
+omni_attenuation = 1.6
+
+[node name="LegL" type="Node3D" parent="SquashRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, 0.50, 0)
+
+[node name="LegLMesh" type="MeshInstance3D" parent="SquashRoot/LegL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
+mesh = SubResource("CapsuleMesh_leg")
+
+[node name="BootLMesh" type="MeshInstance3D" parent="SquashRoot/LegL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.44, -0.03)
+mesh = SubResource("BoxMesh_boot")
+
+[node name="LegR" type="Node3D" parent="SquashRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0.50, 0)
+
+[node name="LegRMesh" type="MeshInstance3D" parent="SquashRoot/LegR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
+mesh = SubResource("CapsuleMesh_leg")
+
+[node name="BootRMesh" type="MeshInstance3D" parent="SquashRoot/LegR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.44, -0.03)
+mesh = SubResource("BoxMesh_boot")
