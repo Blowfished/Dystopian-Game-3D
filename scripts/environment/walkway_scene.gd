@@ -39,7 +39,7 @@ func _apply_quality(level: GameState.QualityLevel) -> void:
 				env.ssr_enabled = false
 				env.ssao_enabled = false
 				env.sdfgi_enabled = false
-				env.fog_density = 0.0046
+				env.fog_density = 0.0052
 			if post_mat:
 				post_mat.set_shader_parameter("grain_strength", 0.0)
 				post_mat.set_shader_parameter("vignette_strength", 0.24)
@@ -57,7 +57,7 @@ func _apply_quality(level: GameState.QualityLevel) -> void:
 				env.ssr_max_steps = 40
 				env.ssao_enabled = true
 				env.sdfgi_enabled = false
-				env.fog_density = 0.0038
+				env.fog_density = 0.0045
 			if post_mat:
 				post_mat.set_shader_parameter("grain_strength", 0.016)
 				post_mat.set_shader_parameter("vignette_strength", 0.28)
@@ -75,7 +75,7 @@ func _apply_quality(level: GameState.QualityLevel) -> void:
 				env.ssr_max_steps = 64
 				env.ssao_enabled = true
 				env.sdfgi_enabled = true
-				env.fog_density = 0.0036
+				env.fog_density = 0.0042
 			if post_mat:
 				post_mat.set_shader_parameter("grain_strength", 0.018)
 				post_mat.set_shader_parameter("vignette_strength", 0.30)

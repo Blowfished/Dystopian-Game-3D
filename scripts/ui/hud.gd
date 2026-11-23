@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var cursor_hint: Label = %CursorHint
 
 var _controls_visible: bool = true
+var _user_toggled_help: bool = false
 
 
 func _ready() -> void:
@@ -17,16 +18,32 @@ func _ready() -> void:
 	GameState.cursor_mode_changed.connect(_on_cursor_mode_changed)
 	_on_quality_changed(GameState.quality_level)
 	_on_cursor_mode_changed(GameState.is_cursor_captured())
+	_schedule_help_auto_hide()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_help"):
+		_user_toggled_help = true
 		_controls_visible = not _controls_visible
+		controls_panel.modulate.a = 1.0
 		controls_panel.visible = _controls_visible
 
 
 func _process(_delta: float) -> void:
 	fps_label.text = "%d FPS" % Engine.get_frames_per_second()
+
+
+func _schedule_help_auto_hide() -> void:
+	await get_tree().create_timer(8.0).timeout
+	if _user_toggled_help or not _controls_visible:
+		return
+	var tw := create_tween()
+	tw.tween_property(controls_panel, "modulate:a", 0.0, 0.45)
+	await tw.finished
+	if not _user_toggled_help:
+		_controls_visible = false
+		controls_panel.visible = false
+		controls_panel.modulate.a = 1.0
 
 
 func _on_quality_button_pressed() -> void:

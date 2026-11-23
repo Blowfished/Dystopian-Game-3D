@@ -53,40 +53,40 @@ func _rebuild() -> void:
 		"NearTowers",
 		window_shader,
 		rng,
-		110,
+		115,
 		54.0, 128.0,
 		Vector2(10.0, 24.0),
 		Vector2(52.0, 138.0),
 		Vector2(-85.0, -32.0),
-		1.95, 0.44,
+		1.85, 0.54, 0.92, 0.06,
 		Color("#10162B"), Color("#192240")
 	)
 
-	# 2. Mid Skyline Ring (taller towers + occasional vertical neon strips)
+	# 2. Mid Skyline Ring (taller towers, denser tiny windows, soft indigo haze)
 	_build_tower_layer(
 		"MidTowers",
 		window_shader,
 		rng,
-		155,
+		165,
 		135.0, 275.0,
 		Vector2(16.0, 36.0),
 		Vector2(95.0, 240.0),
 		Vector2(-115.0, -55.0),
-		1.75, 0.38,
+		1.55, 0.50, 0.72, 0.28,
 		Color("#0C1226"), Color("#17203F")
 	)
 
-	# 3. Far Colossus Monoliths (planet-wide Lattice megastructures disappearing into mist)
+	# 3. Far Colossus Monoliths (planet-wide Lattice megastructures fading into indigo mist)
 	_build_tower_layer(
 		"ColossusTowers",
 		window_shader,
 		rng,
-		95,
+		105,
 		285.0, 560.0,
 		Vector2(34.0, 74.0),
 		Vector2(210.0, 480.0),
 		Vector2(-180.0, -90.0),
-		1.35, 0.30,
+		1.15, 0.44, 0.56, 0.58,
 		Color("#0A0F22"), Color("#161E3B")
 	)
 
@@ -100,7 +100,7 @@ func _rebuild() -> void:
 		Vector2(9.0, 20.0),
 		Vector2(45.0, 82.0),
 		Vector2(-102.0, -92.0),
-		1.35, 0.36,
+		1.25, 0.46, 0.80, 0.34,
 		Color("#090E1E"), Color("#131B34")
 	)
 
@@ -133,6 +133,8 @@ func _build_tower_layer(
 	base_y_range: Vector2,
 	emission_boost: float,
 	window_density: float,
+	window_scale: float,
+	layer_haze: float,
 	dark_col: Color,
 	mid_col: Color
 ) -> void:
@@ -154,6 +156,8 @@ func _build_tower_layer(
 	mat.set_shader_parameter("tower_mid", mid_col)
 	mat.set_shader_parameter("emission_boost", emission_boost)
 	mat.set_shader_parameter("window_density", window_density)
+	mat.set_shader_parameter("window_scale", window_scale)
+	mat.set_shader_parameter("layer_haze", layer_haze)
 	mmi.material_override = mat
 
 	var transforms: Array[Transform3D] = []
@@ -282,7 +286,7 @@ func _build_searchlights() -> void:
 
 
 func _build_haze_layers() -> void:
-	# Soft translucent painterly haze veil in the abyss below and behind the midground
+	# Soft translucent painterly haze veils in the abyss below and between skyline depth rings
 	var haze_root := Node3D.new()
 	haze_root.name = "AtmosphericHazeLayers"
 	add_child(haze_root)
@@ -290,14 +294,56 @@ func _build_haze_layers() -> void:
 	var abyss_mat := StandardMaterial3D.new()
 	abyss_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	abyss_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	abyss_mat.albedo_color = Color(0.09, 0.12, 0.25, 0.52)
+	abyss_mat.albedo_color = Color(0.09, 0.12, 0.25, 0.56)
 	abyss_mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
 
 	var abyss_plane := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(900.0, 900.0)
+	pm.size = Vector2(1100.0, 1100.0)
 	abyss_plane.mesh = pm
 	abyss_plane.material_override = abyss_mat
 	abyss_plane.position = Vector3(0.0, -56.0, -120.0)
 	abyss_plane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	haze_root.add_child(abyss_plane)
+
+	# Vertical gradient mist curtains between Near/Mid and Mid/Colossus rings
+	var haze_tex := _make_vertical_haze_texture()
+	var ring_specs := [
+		{"radius": 130.0, "height": 220.0, "y": 24.0, "col": Color(0.11, 0.145, 0.30, 0.22)},
+		{"radius": 278.0, "height": 340.0, "y": 52.0, "col": Color(0.12, 0.155, 0.32, 0.28)},
+	]
+	for spec in ring_specs:
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = spec["radius"]
+		cyl.bottom_radius = spec["radius"]
+		cyl.height = spec["height"]
+		cyl.radial_segments = 36
+		cyl.cap_top = false
+		cyl.cap_bottom = false
+
+		var cmat := StandardMaterial3D.new()
+		cmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		cmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		cmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		cmat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+		cmat.albedo_color = spec["col"]
+		cmat.albedo_texture = haze_tex
+
+		var ring := MeshInstance3D.new()
+		ring.mesh = cyl
+		ring.material_override = cmat
+		ring.position = Vector3(0.0, spec["y"], 0.0)
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		haze_root.add_child(ring)
+
+
+func _make_vertical_haze_texture() -> ImageTexture:
+	var h := 64
+	var img := Image.create(4, h, false, Image.FORMAT_RGBA8)
+	for y in range(h):
+		var v := float(y) / float(h - 1)
+		# Dense in the lower/mid city strata, fading smoothly toward the night zenith
+		var alpha := smoothstep(0.0, 0.25, v) * (1.0 - smoothstep(0.35, 1.0, v))
+		for x in range(4):
+			img.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+	return ImageTexture.create_from_image(img)
